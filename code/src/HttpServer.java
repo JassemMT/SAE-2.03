@@ -26,16 +26,20 @@ public class HttpServer {
         File fichierHtml = new File(config.getDocumentRoot() + cheminPage);
         System.out.println("Chemin absolu demandé : " + fichierHtml.getAbsolutePath());
 
+        System.out.println("path fichier html : " + fichierHtml.getAbsolutePath());
+        System.out.println("chemin page : " + cheminPage);
 
         if (!fichierHtml.exists()) {
             if (cheminPage.endsWith("/index.html")) {
-                envoyerListingRepertoire(client, new File(config.getDocumentRoot()));
+                // Extraire le répertoire du chemin demandé
+                String cheminRepertoire = cheminPage.substring(0, cheminPage.lastIndexOf("/index.html"));
+                File repertoire = new File(config.getDocumentRoot() + cheminRepertoire);
+                envoyerListingRepertoire(client, repertoire, cheminRepertoire);
             } else {
                 envoyerErreur404(client);
             }
             return;
         }
-
 
         byte[] contenuFichier = lireFichierEnOctets(fichierHtml);
 
@@ -51,21 +55,48 @@ public class HttpServer {
         client.close();
     }
 
-    static void envoyerListingRepertoire(Socket client, File repertoire) throws IOException {
+    /**
+     * Si le repertoire ne contient pas de index.html, alors un listing des pages du repertoire est envoyé
+     * @param client
+     * @param repertoire
+     * @param cheminRelatif le chemin relatif depuis la racine web (ex: "", "/dossier1", "/dossier1/sousdossier")
+     * @throws IOException
+     */
+    static void envoyerListingRepertoire(Socket client, File repertoire, String cheminRelatif) throws IOException {
         if (!repertoire.isDirectory()) {
             envoyerErreur404(client);
             return;
         }
 
-        StringBuilder html = new StringBuilder("<html><body><h1>Index of /</h1><ul>");
+        // nom avec le chemin actuel
+        String titreRepertoire = cheminRelatif.isEmpty() ? "/" : cheminRelatif + "/";
+        StringBuilder html = new StringBuilder("<html><body><h1>Index of " + titreRepertoire + "</h1><ul>");
+
+        // Ajouter un lien ".." si on n'est pas à la racine
+        if (!cheminRelatif.isEmpty()) {
+            String cheminParent = cheminRelatif.contains("/") ?
+                    cheminRelatif.substring(0, cheminRelatif.lastIndexOf("/")) : "";
+            String lienParent = cheminParent.isEmpty() ? "/index.html" : cheminParent + "/index.html";
+            html.append("<li><a href=\"").append(lienParent).append("\">[..]</a></li>");
+        }
+
         File[] fichiers = repertoire.listFiles();
 
         if (fichiers != null) {
             for (File f : fichiers) {
-
                 String nom = f.getName();
-                String lien = f.isDirectory() ? nom + "/" : nom + "/index.html";
-                html.append("<li><a href=\"/").append(lien).append("\">").append(lien).append("</a></li>");
+                String lienComplet;
+
+                if (f.isDirectory()) {
+                    // Pour un répertoire, on construit le chemin vers son index.html
+                    lienComplet = cheminRelatif + "/" + nom + "/index.html";
+                } else {
+                    // Pour un fichier, on construit le chemin direct
+                    lienComplet = cheminRelatif + "/" + nom;
+                }
+
+                String affichage = f.isDirectory() ? nom + "/" : nom;
+                html.append("<li><a href=\"").append(lienComplet).append("\">").append(affichage).append("</a></li>");
             }
         }
 
@@ -83,7 +114,6 @@ public class HttpServer {
         sortie.close();
         client.close();
     }
-
 
     static byte[] lireFichierEnOctets(File fichier) throws IOException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -129,7 +159,7 @@ public class HttpServer {
             if (line != null && !line.isEmpty()) {
                 System.out.println(line);
                 String[] tokens = line.split(" ");
-                if (tokens.length >= 2 && tokens[0].equals("GET")) { //C'est là où on lit l'en-tête pour voir si l'url demande une page
+                if (tokens.length >= 2 && tokens[0].equals("GET")) {
                     pageDemandee = tokens[1];
                     if (pageDemandee.equals("/")) {
                         pageDemandee = "/index.html";
