@@ -5,12 +5,40 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.lang.management.ManagementFactory;
+import java.util.zip.GZIPOutputStream;
 
 public class HttpServer {
 
     static Config config;
     static int nbUtilisateurs;
+    static Logger logger;
 
+
+    // Méthode pour déterminer le type MIME d'un fichier
+    static String getTypeMedia(String nomFichier) {
+        String extension = nomFichier.substring(nomFichier.lastIndexOf('.') + 1).toLowerCase();
+        switch (extension) {
+            case "jpg":
+            case "jpeg": return "image/jpeg";
+            case "png": return "image/png";
+            case "gif": return "image/gif";
+            case "bmp": return "image/bmp";
+            case "webp": return "image/webp";
+            case "svg": return "image/svg+xml";
+            case "ico": return "image/x-icon";
+            default: return "text/html";
+        }
+    }
+
+    /**
+     * Méthode pour vérifier si un fichier est une image qui doit être compressée
+     * @param nomFichier
+     * @return
+     */
+    static boolean estFichierMedia(String nomFichier) {
+        String extension = nomFichier.substring(nomFichier.lastIndexOf('.') + 1).toLowerCase();
+        return extension.matches("jpg|jpeg|png|gif|bmp|webp|svg|ico");
+    }
 
     static void envoyerErreur404(Socket client) throws IOException {
         String contenuErreur = "<html><body><h1>404 - File not found</h1></body></html>";
@@ -26,22 +54,20 @@ public class HttpServer {
         sortie.write(contenuErreur.getBytes("UTF-8"));
         sortie.close();
         client.close();
+
+        logger.logErreur("404!!!!!!!!!!!!!!!!!!: " + client.getInetAddress().getHostAddress());
+
     }
 
-
-
     static void envoyerPageHtml(Socket client, String cheminPage) throws Exception {
-
         if(cheminPage.equals("/status")){
             envoyerStatus(client);
+            return;
         }
-        File fichierHtml = new File(config.getDocumentRoot() + cheminPage);
-        System.out.println("Chemin absolu demandé : " + fichierHtml.getAbsolutePath());
+        File fichier = new File(config.getDocumentRoot() + cheminPage);
+        System.out.println("Chemin absolu demandé : " + fichier.getAbsolutePath());
 
-        System.out.println("path fichier html : " + fichierHtml.getAbsolutePath());
-        System.out.println("chemin page : " + cheminPage);
-
-        if (!fichierHtml.exists()) {
+        if (!fichier.exists()) {
             if (cheminPage.endsWith("/index.html")) {
                 // Extraire le répertoire du chemin demandé
                 String cheminRepertoire = cheminPage.substring(0, cheminPage.lastIndexOf("/index.html"));
@@ -53,35 +79,58 @@ public class HttpServer {
             return;
         }
 
-        byte[] contenuFichier = lireFichierEnOctets(fichierHtml);
+        String typeMedia = getTypeMedia(fichier.getName());
 
-        String enTeteHttp = "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/html\r\n" +
-                "Content-Length: " + contenuFichier.length + "\r\n" +
-                "\r\n";
-
+        // Lire le fichier
+        byte[] contenuFichier = lireFichierEnOctets(fichier);
         OutputStream sortie = client.getOutputStream();
-        sortie.write(enTeteHttp.getBytes("UTF-8"));
-        sortie.write(contenuFichier);
+
+        // Si c'est un media
+        if (estFichierMedia(fichier.getName())) {
+            // On compress avec gzip
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (GZIPOutputStream gzipOut = new GZIPOutputStream(baos)) {
+                gzipOut.write(contenuFichier);
+                gzipOut.finish();
+            }
+            byte[] contenuCompresse = baos.toByteArray();
+
+            String enTeteHttp = "HTTP/1.1 200 OK\r\n" +
+                    "Content-Type: " + typeMedia + "\r\n" +
+                    "Content-Encoding: gzip\r\n" +
+                    "Content-Length: " + contenuCompresse.length + "\r\n" +
+                    "\r\n";
+
+            sortie.write(enTeteHttp.getBytes("UTF-8"));
+            sortie.write(contenuCompresse);
+        } else {
+            // Fichier HTML ou autre, pas de compression
+            String enTeteHttp = "HTTP/1.1 200 OK\r\n" +
+                    "Content-Type: " + typeMedia + "\r\n" +
+                    "Content-Length: " + contenuFichier.length + "\r\n" +
+                    "\r\n";
+
+            sortie.write(enTeteHttp.getBytes("UTF-8"));
+            sortie.write(contenuFichier);
+        }
         sortie.close();
         client.close();
     }
 
-
     /**
      * La mémoire disponible (non utilisée)
-     * L’espace disque disponible (idem)
+     * L'espace disque disponible (idem)
      * Le nombre de processus
-     * Le nombre d’utilisateurs
+     * Le nombre d'utilisateurs
      * @param client
      * @throws IOException
      */
     static void envoyerStatus(Socket client) throws IOException {
         Runtime runtime = Runtime.getRuntime();
 
-        long memLibre = runtime.freeMemory(); // mémoire disponible (non utilisée) en bytes
+        long memLibre = runtime.freeMemory();
 
-        // Espace disque disponible sur la partition racine (en bytes)
+        // Espace disque disponible
         long storageLibre = 0;
         for (var store : java.nio.file.FileSystems.getDefault().getFileStores()) {
             storageLibre += store.getUsableSpace();
@@ -97,7 +146,7 @@ public class HttpServer {
                 "<li>Mémoire disponible (non utilisée) : " + memLibre / (1024 * 1024) + " Mo</li>" +
                 "<li>Espace disque disponible : " + storageLibre / (1024 * 1024 * 1024) + " Go</li>" +
                 "<li>Nombre de processus : " + nbProc + "</li>" +
-                "<li>Nombre d’utilisateurs : " + nbUtilisateurs + "</li>" +
+                "<li>Nombre d'utilisateurs : " + nbUtilisateurs + "</li>" +
                 "</ul>" +
                 "</body></html>";
 
@@ -113,8 +162,6 @@ public class HttpServer {
         }
         client.close();
     }
-
-
 
     /**
      * Si le repertoire ne contient pas de index.html, alors un listing des pages du repertoire est envoyé
@@ -193,7 +240,6 @@ public class HttpServer {
         ServerSocket socket_serv;
         Socket socket_client;
         nbUtilisateurs ++;
-        Logger logger;
 
         // Charger la configuration
         try {
@@ -205,10 +251,7 @@ public class HttpServer {
             return;
         }
 
-
-
         int port = config.getPort();
-
 
         try {
             socket_serv = new ServerSocket(port);
@@ -218,7 +261,6 @@ public class HttpServer {
         }
 
         while (true) {
-
 
             socket_client = socket_serv.accept();
             InputStream in = socket_client.getInputStream();
@@ -239,7 +281,6 @@ public class HttpServer {
                 continue;
             }
 
-
             logger.logAcces("Connexion autorisée depuis : " + ipClient);
 
             if (line != null && !line.isEmpty()) {
@@ -252,7 +293,6 @@ public class HttpServer {
                     if (pageDemandee.equals("/")) {
                         pageDemandee = "/index.html";
                     }
-
                 }
             }
 
