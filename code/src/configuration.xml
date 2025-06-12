@@ -6,7 +6,7 @@
         <first>accept</first>
         <last>reject</last>
         </order>
-        <default>reject</default>
+        <default>accept</default>
         <accept>192.168.0.0/24</accept>
         <accept>172.23.96.1/</accept>
         <accept>127.0.0.1</accept>

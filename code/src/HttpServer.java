@@ -1,10 +1,16 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.lang.management.ManagementFactory;
 
 public class HttpServer {
 
     static Config config;
+    static int nbUtilisateurs;
+
 
     static void envoyerErreur404(Socket client) throws IOException {
         String contenuErreur = "<html><body><h1>404 - File not found</h1></body></html>";
@@ -22,7 +28,13 @@ public class HttpServer {
         client.close();
     }
 
+
+
     static void envoyerPageHtml(Socket client, String cheminPage) throws Exception {
+
+        if(cheminPage.equals("/status")){
+            envoyerStatus(client);
+        }
         File fichierHtml = new File(config.getDocumentRoot() + cheminPage);
         System.out.println("Chemin absolu demandé : " + fichierHtml.getAbsolutePath());
 
@@ -54,6 +66,55 @@ public class HttpServer {
         sortie.close();
         client.close();
     }
+
+
+    /**
+     * La mémoire disponible (non utilisée)
+     * L’espace disque disponible (idem)
+     * Le nombre de processus
+     * Le nombre d’utilisateurs
+     * @param client
+     * @throws IOException
+     */
+    static void envoyerStatus(Socket client) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+
+        long memLibre = runtime.freeMemory(); // mémoire disponible (non utilisée) en bytes
+
+        // Espace disque disponible sur la partition racine (en bytes)
+        long storageLibre = 0;
+        for (var store : java.nio.file.FileSystems.getDefault().getFileStores()) {
+            storageLibre += store.getUsableSpace();
+        }
+
+        long nbProc = ProcessHandle.allProcesses().count();
+
+        int nbUtilisateurs = 1;
+
+        String html = "<html><body>" +
+                "<h1>Statut du serveur</h1>" +
+                "<ul>" +
+                "<li>Mémoire disponible (non utilisée) : " + memLibre / (1024 * 1024) + " Mo</li>" +
+                "<li>Espace disque disponible : " + storageLibre / (1024 * 1024 * 1024) + " Go</li>" +
+                "<li>Nombre de processus : " + nbProc + "</li>" +
+                "<li>Nombre d’utilisateurs : " + nbUtilisateurs + "</li>" +
+                "</ul>" +
+                "</body></html>";
+
+        byte[] contenu = html.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        String enteteHttp = "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/html; charset=UTF-8\r\n" +
+                "Content-Length: " + contenu.length + "\r\n\r\n";
+
+        try (OutputStream os = client.getOutputStream()) {
+            os.write(enteteHttp.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            os.write(contenu);
+        }
+        client.close();
+    }
+
+
 
     /**
      * Si le repertoire ne contient pas de index.html, alors un listing des pages du repertoire est envoyé
@@ -131,6 +192,7 @@ public class HttpServer {
     public static void main(String[] args) throws Exception {
         ServerSocket socket_serv;
         Socket socket_client;
+        nbUtilisateurs ++;
 
         // Charger la configuration
         try {
@@ -167,19 +229,24 @@ public class HttpServer {
                 System.out.println("Connexion refusée depuis : " + ipClient);
                 Logger.logErreur("Connexion refusée : " + ipClient);
                 socket_client.close();
+                nbUtilisateurs--;
                 continue;
             }
+
 
             Logger.logAcces("Connexion autorisée depuis : " + ipClient);
 
             if (line != null && !line.isEmpty()) {
                 System.out.println(line);
                 String[] tokens = line.split(" ");
+
                 if (tokens.length >= 2 && tokens[0].equals("GET")) {
                     pageDemandee = tokens[1];
+
                     if (pageDemandee.equals("/")) {
                         pageDemandee = "/index.html";
                     }
+
                 }
             }
 
