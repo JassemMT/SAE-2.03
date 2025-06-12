@@ -5,28 +5,29 @@ import java.time.LocalDateTime;
 
 public class Logger {
 
-    private static String accessLogPath = "access.log";
-    private static String errorLogPath = "error.log";
+    private String accessLogPath;
+    private String errorLogPath;
 
-    public static void setAccessLog(String path) {
-        accessLogPath = path;
-        ensureFileExists(accessLogPath);
+    public Logger(String accessLogPath, String errorLogPath) {
+        this.accessLogPath = accessLogPath;
+        this.errorLogPath = errorLogPath;
+        FichierExiste(accessLogPath);
+        FichierExiste(errorLogPath);
+
+
     }
 
-    public static void setErrorLog(String path) {
-        errorLogPath = path;
-        ensureFileExists(errorLogPath);
-    }
-
-    public static void logAcces(String message) {
+    public void logAcces(String message) {
         log(accessLogPath, "[ACCES] " + message);
+        System.out.println(accessLogPath + " : ajout !!!!!!!!!!!! ");
+
     }
 
-    public static void logErreur(String message) {
+    public void logErreur(String message) {
         log(errorLogPath, "[ERREUR] " + message);
     }
 
-    private static void log(String file, String message) {
+    private void log(String file, String message) {
         try (FileWriter fw = new FileWriter(file, true)) {
             fw.write(LocalDateTime.now() + " - " + message + "\n");
             fw.flush();
@@ -35,7 +36,7 @@ public class Logger {
         }
     }
 
-    private static void ensureFileExists(String path) {
+    private void FichierExiste(String path) {
         try {
             File file = new File(path);
             File parent = file.getParentFile();

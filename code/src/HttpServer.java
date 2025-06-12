@@ -193,16 +193,19 @@ public class HttpServer {
         ServerSocket socket_serv;
         Socket socket_client;
         nbUtilisateurs ++;
+        Logger logger;
 
         // Charger la configuration
         try {
             config = new Config("configuration.xml");
-            Logger.setAccessLog(config.getAccessLog());
-            Logger.setErrorLog(config.getErrorLog());
+            logger = new Logger(config.getAccessLog(),config.getErrorLog());
+
         } catch (Exception e) {
             System.err.println("Erreur de chargement du fichier de configuration : " + e.getMessage());
             return;
         }
+
+
 
         int port = config.getPort();
 
@@ -230,14 +233,14 @@ public class HttpServer {
 
             if (!config.estAutorise(ipClient)) {
                 System.out.println("Connexion refusée depuis : " + ipClient);
-                Logger.logErreur("Connexion refusée : " + ipClient);
+                logger.logErreur("Connexion refusée : " + ipClient);
                 socket_client.close();
                 nbUtilisateurs--;
                 continue;
             }
 
 
-            Logger.logAcces("Connexion autorisée depuis : " + ipClient);
+            logger.logAcces("Connexion autorisée depuis : " + ipClient);
 
             if (line != null && !line.isEmpty()) {
                 System.out.println(line);
