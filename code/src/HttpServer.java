@@ -150,11 +150,27 @@ public class HttpServer {
         }
 
         while (true) {
+
+
             socket_client = socket_serv.accept();
             InputStream in = socket_client.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             String line = reader.readLine();
             String pageDemandee = "/index.html";
+
+            String ipClient = socket_client.getInetAddress().getHostAddress();
+            if (ipClient.equals("0:0:0:0:0:0:0:1")){
+                ipClient = "127.0.0.1";
+            }
+
+            if (!config.estAutorise(ipClient)) {
+                System.out.println("Connexion refusée depuis : " + ipClient);
+                Logger.logErreur("Connexion refusée : " + ipClient);
+                socket_client.close();
+                continue;
+            }
+
+            Logger.logAcces("Connexion autorisée depuis : " + ipClient);
 
             if (line != null && !line.isEmpty()) {
                 System.out.println(line);

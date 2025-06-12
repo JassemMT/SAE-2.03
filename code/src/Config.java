@@ -15,6 +15,39 @@ public class Config {
     private String securityDefault;
     private List<String> acceptIPs = new ArrayList<>();
     private List<String> rejectIPs = new ArrayList<>();
+    private boolean acceptFirst = true;
+    private String defaultPolicy = "reject"; // ou "accept"
+
+    public void ajouterAccept(String ip) {
+        acceptIPs.add(ip.trim());
+    }
+
+    public void ajouterReject(String ip) {
+        rejectIPs.add(ip.trim());
+    }
+
+    public void setOrder(String first, String last) {
+        acceptFirst = first.equalsIgnoreCase("accept");
+    }
+
+    public void setDefaultPolicy(String policy) {
+        defaultPolicy = policy.trim().toLowerCase();
+    }
+
+    public boolean estAutorise(String ip) {
+        ip = ip.trim();
+
+        if (acceptFirst) {
+            if (acceptIPs.contains(ip)) return true;
+            if (rejectIPs.contains(ip)) return false;
+        } else {
+            if (rejectIPs.contains(ip)) return false;
+            if (acceptIPs.contains(ip)) return true;
+        }
+
+        // Ni dans accept ni reject
+        return defaultPolicy.equals("accept");
+    }
 
     public Config(String fichierConfig) throws Exception {
         lireConfig(fichierConfig);
@@ -52,6 +85,8 @@ public class Config {
             for (int i = 0; i < acceptNodes.getLength(); i++) {
                 String ip = acceptNodes.item(i).getTextContent().trim();
                 if (!ip.isEmpty()) acceptIPs.add(ip);
+                System.out.println(this.acceptIPs.get(i));
+
             }
 
             // reject list (IP exactes)
@@ -59,7 +94,9 @@ public class Config {
             for (int i = 0; i < rejectNodes.getLength(); i++) {
                 String ip = rejectNodes.item(i).getTextContent().trim();
                 if (!ip.isEmpty()) rejectIPs.add(ip);
+                System.out.println(this.rejectIPs.get(i));
             }
+
         }
     }
 
