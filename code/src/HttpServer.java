@@ -197,12 +197,15 @@ public class HttpServer {
         // Charger la configuration
         try {
             config = new Config("configuration.xml");
+            Logger.setAccessLog(config.getAccessLog());
+            Logger.setErrorLog(config.getErrorLog());
         } catch (Exception e) {
             System.err.println("Erreur de chargement du fichier de configuration : " + e.getMessage());
             return;
         }
 
         int port = config.getPort();
+
 
         try {
             socket_serv = new ServerSocket(port);
@@ -221,7 +224,7 @@ public class HttpServer {
             String pageDemandee = "/index.html";
 
             String ipClient = socket_client.getInetAddress().getHostAddress();
-            if (ipClient.equals("0:0:0:0:0:0:0:1")){
+            if (ipClient.equals("0:0:0:0:0:0:0:1")){//gérer la connexion si navigateur utilise une IPV6
                 ipClient = "127.0.0.1";
             }
 

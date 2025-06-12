@@ -1,5 +1,5 @@
 <webconf>
-    <port>800</port>
+    <port>8080</port>
     <DocumentRoot>var/www</DocumentRoot>
     <security>
         <order>
@@ -12,6 +12,6 @@
         <accept>127.0.0.1</accept>
         <reject>192.168.1.0/24</reject>
     </security>
-    <accesslog>/var/log/myweb/access.log</accesslog>
-    <errorlog>/var/log/myweb/error.log</errorlog>
+    <accesslog>/var/logs/access.log</accesslog>
+    <errorlog>/var/logs/error.log</errorlog>
 </webconf>

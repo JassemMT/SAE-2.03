@@ -19,6 +19,7 @@ public class Config {
     private boolean acceptFirst = true;
     private String defaultPolicy = "reject"; // ou "accept"
 
+
     public void ajouterAccept(String ip) {
         acceptIPs.add(ip.trim());
     }
