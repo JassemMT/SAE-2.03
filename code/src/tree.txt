@@ -1,0 +1,11 @@
+src/
+├── var/
+│   ├── logs/
+│   └── www/
+│       ├── images/
+│       ├── formulaire.html
+│       └── index.html
+├── Config.java
+├── HttpServer.java
+├── Logger.java
+└── configuration.xml

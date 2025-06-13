@@ -223,6 +223,52 @@ public class HttpServer {
         client.close();
     }
 
+    // Ajoutez cette méthode dans HttpServer.java
+    static void traiterFormulaire(Socket client, BufferedReader reader) throws IOException {
+        // Lire les en-têtes pour connaître la longueur du contenu
+        int contentLength = 0;
+        String line;
+        while ((line = reader.readLine()) != null && !line.isEmpty()) {
+            if (line.startsWith("Content-Length:")) {
+                contentLength = Integer.parseInt(line.substring("Content-Length:".length()).trim());
+            }
+        }
+
+        // Lire le corps de la requête
+        char[] buffer = new char[contentLength];
+        reader.read(buffer, 0, contentLength);
+        String donnees = new String(buffer);
+
+        // Parser les données (format: user_name=nom&user_mail=email)
+        String[] paires = donnees.split("&");
+        String nom = "", email = "";
+        for (String paire : paires) {
+            String[] kv = paire.split("=");
+            if (kv.length == 2) {
+                if (kv[0].equals("user_name")) {
+                    nom = java.net.URLDecoder.decode(kv[1], "UTF-8");
+                } else if (kv[0].equals("user_mail")) {
+                    email = java.net.URLDecoder.decode(kv[1], "UTF-8");
+                }
+            }
+        }
+
+        // Enregistrer dans le fichier
+        File fichierUsers = new File(config.getDocumentRoot() + "/userlist.txt");
+        try (FileWriter fw = new FileWriter(fichierUsers, true)) {
+            fw.write(nom + ";" + email + "\n");
+        }
+
+        // Répondre au client
+        String reponse = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
+                "<html><body>Merci pour votre soumission!</body></html>";
+
+        OutputStream out = client.getOutputStream();
+        out.write(reponse.getBytes("UTF-8"));
+        out.close();
+        client.close();
+    }
+
     static byte[] lireFichierEnOctets(File fichier) throws IOException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         FileInputStream flux = new FileInputStream(fichier);
@@ -283,15 +329,21 @@ public class HttpServer {
 
             logger.logAcces("Connexion autorisée depuis : " + ipClient);
 
+
             if (line != null && !line.isEmpty()) {
                 System.out.println(line);
                 String[] tokens = line.split(" ");
 
-                if (tokens.length >= 2 && tokens[0].equals("GET")) {
-                    pageDemandee = tokens[1];
-
-                    if (pageDemandee.equals("/")) {
-                        pageDemandee = "/index.html";
+                if (tokens.length >= 2) {
+                    if (tokens[0].equals("GET")) {
+                        pageDemandee = tokens[1];
+                        if (pageDemandee.equals("/")) {
+                            pageDemandee = "/index.html";
+                        }
+                    } else if (tokens[0].equals("POST") && tokens[1].equals("/programme")) {
+                        traiterFormulaire(socket_client, reader);
+                        nbUtilisateurs--;
+                        continue;
                     }
                 }
             }
