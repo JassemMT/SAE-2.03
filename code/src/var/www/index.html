@@ -1,108 +1,73 @@
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-xmlns:w="urn:schemas-microsoft-com:office:word"
-xmlns="http://www.w3.org/TR/REC-html40">
-
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
-<meta name=ProgId content=Word.Document>
-<meta name=Generator content="Microsoft Word 9">
-<meta name=Originator content="Microsoft Word 9">
-<link rel=File-List href="./index_fichiers/filelist.xml">
-<title>Serveur MiniWeb</title>
-<!--[if gte mso 9]><xml>
- <o:DocumentProperties>
-  <o:Author>Nataf</o:Author>
-  <o:LastAuthor>Nataf</o:LastAuthor>
-  <o:Revision>2</o:Revision>
-  <o:TotalTime>7</o:TotalTime>
-  <o:Created>2002-12-27T12:11:00Z</o:Created>
-  <o:LastSaved>2002-12-27T12:11:00Z</o:LastSaved>
-  <o:Pages>1</o:Pages>
-  <o:Company>Loria</o:Company>
-  <o:Lines>1</o:Lines>
-  <o:Paragraphs>1</o:Paragraphs>
-  <o:Version>9.2812</o:Version>
- </o:DocumentProperties>
-</xml><![endif]--><!--[if gte mso 9]><xml>
- <w:WordDocument>
-  <w:HyphenationZone>21</w:HyphenationZone>
- </w:WordDocument>
-</xml><![endif]-->
-<style>
-<!--
- /* Style Definitions */
-p.MsoNormal, li.MsoNormal, div.MsoNormal
-	{mso-style-parent:"";
-	margin:0cm;
-	margin-bottom:.0001pt;
-	mso-pagination:widow-orphan;
-	font-size:12.0pt;
-	font-family:"Times New Roman";
-	mso-fareast-font-family:"Times New Roman";
-	mso-bidi-font-family:"Times New Roman";}
-h1
-	{mso-style-next:Normal;
-	margin-top:12.0pt;
-	margin-right:0cm;
-	margin-bottom:3.0pt;
-	margin-left:0cm;
-	mso-pagination:widow-orphan;
-	page-break-after:avoid;
-	mso-outline-level:1;
-	font-size:16.0pt;
-	font-family:Arial;
-	mso-font-kerning:16.0pt;}
-h2
-	{mso-style-next:Normal;
-	margin-top:12.0pt;
-	margin-right:0cm;
-	margin-bottom:3.0pt;
-	margin-left:0cm;
-	mso-pagination:widow-orphan;
-	page-break-after:avoid;
-	mso-outline-level:2;
-	font-size:14.0pt;
-	font-family:Arial;
-	font-style:italic;}
-a:link, span.MsoHyperlink
-	{color:blue;
-	text-decoration:underline;
-	text-underline:single;}
-a:visited, span.MsoHyperlinkFollowed
-	{color:purple;
-	text-decoration:underline;
-	text-underline:single;}
-@page Section1
-	{size:595.3pt 841.9pt;
-	margin:70.85pt 70.85pt 70.85pt 70.85pt;
-	mso-header-margin:35.4pt;
-	mso-footer-margin:35.4pt;
-	mso-paper-source:0;}
-div.Section1
-	{page:Section1;}
--->
-</style>
+    <meta charset="UTF-8">
+    <title>SAE 2.03 : Serveur Web</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        header {
+            display: flex;
+            align-items: center;
+        }
+        header img {
+            width: 50px;
+            height: auto;
+            margin-right: 15px;
+        }
+        h1 {
+            font-size: 1.8em;
+            margin: 0;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 15px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
+<body>
+<header>
+    <img src="images/n2.jpg" alt="Logo SAE">
+    <h1>SAE 2.03 : Programmation d’un serveur Web</h1>
+    <img src="images/l1.gif" alt="Logo SAE">
+</header>
 
-<body lang=FR link=blue vlink=purple style='tab-interval:35.4pt'>
+<section>
+    <h2>Introduction</h2>
+    <p>
+        En TP, vous avez programmé un serveur Web capable de :
+    </p>
+    <ul>
+        <li>Recevoir des requêtes TCP depuis un navigateur (port 80)</li>
+        <li>Analyser la requête pour trouver un fichier</li>
+        <li>Envoyer ce fichier au navigateur pour affichage</li>
+    </ul>
 
-<div class=Section1>
+    <h2>Évolutions prévues</h2>
+    <p>Dans cette SAÉ, le serveur devient configurable et plus puissant :</p>
+    <ul>
+        <li>Port d'écoute modifiable</li>
+        <li>Définition d'un répertoire de base</li>
+        <li>Contrôle d'accès aux répertoires</li>
+        <li>Filtrage par adresses IP</li>
+        <li>Journalisation des accès et erreurs</li>
+        <li>Affichage de l'état de la machine</li>
+        <li>Encodage multimédia compatible navigateur</li>
+        <li>Gestion de formulaires HTML</li>
+    </ul>
 
-<h1 align=center style='text-align:center'>Serveur MiniWeb</h1>
-
-<h2>Sujet du TP</h2>
-
-<p class=MsoNormal>L'objectif est de r&eacute;aliser un serveur web similaire &agrave; celui
-qui est utilis&eacute; pour afficher cette page.</p>
-
-<p class=MsoNormal>Pour une description du MiniWeb, suivre&nbsp;: <a
-href="miniWeb.html">miniweb.html</a></p>
-
-<p class=MsoNormal>Pour les recommandations techniques, suivre <a
-href="technique.html">technique.html</a></p>
-
-</div>
-
+    <a href="formulaire.html">Accéder au formulaire</a>
+</section>
 </body>
-
 </html>

@@ -223,46 +223,84 @@ public class HttpServer {
         client.close();
     }
 
-    // Ajoutez cette méthode dans HttpServer.java
     static void traiterFormulaire(Socket client, BufferedReader reader) throws IOException {
         // Lire les en-têtes pour connaître la longueur du contenu
-        int contentLength = 0;
+        int longueuCont = 0;
         String line;
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
             if (line.startsWith("Content-Length:")) {
-                contentLength = Integer.parseInt(line.substring("Content-Length:".length()).trim());
+                longueuCont = Integer.parseInt(line.substring("Content-Length:".length()).trim());
             }
         }
 
         // Lire le corps de la requête
-        char[] buffer = new char[contentLength];
-        reader.read(buffer, 0, contentLength);
+        char[] buffer = new char[longueuCont];
+        reader.read(buffer, 0, longueuCont);
         String donnees = new String(buffer);
 
         // Parser les données (format: user_name=nom&user_mail=email)
         String[] paires = donnees.split("&");
         String nom = "", email = "";
+        boolean possedeNom = false, possedeEmail = false;
+
         for (String paire : paires) {
             String[] kv = paire.split("=");
             if (kv.length == 2) {
                 if (kv[0].equals("user_name")) {
                     nom = java.net.URLDecoder.decode(kv[1], "UTF-8");
+                    possedeNom = true;
                 } else if (kv[0].equals("user_mail")) {
                     email = java.net.URLDecoder.decode(kv[1], "UTF-8");
+                    possedeEmail = true;
                 }
             }
         }
 
-        // Enregistrer dans le fichier
+        String reponse;
         File fichierUsers = new File(config.getDocumentRoot() + "/userlist.txt");
-        try (FileWriter fw = new FileWriter(fichierUsers, true)) {
-            fw.write(nom + ";" + email + "\n");
+
+        if (possedeNom && possedeEmail) {
+            try (FileWriter fw = new FileWriter(fichierUsers, true)) {
+                fw.write(nom + ";" + email + "\n");
+            }
+            reponse = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
+                    "<html><body>Merci pour votre soumission!<br>Nom: " + nom + "<br>Email: " + email + "</body></html>";
+        } else if (possedeNom) {
+            String emailTrouve = null;
+            if (fichierUsers.exists()) {
+                try (BufferedReader br = new BufferedReader(new FileReader(fichierUsers))) {
+                    String userLine;
+                    while ((userLine = br.readLine()) != null) {
+                        String[] parts = userLine.split(";");
+                        if (parts.length >= 1 && parts[0].equals(nom)) {
+                            emailTrouve = parts.length > 1 ? parts[1] : "";
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (emailTrouve != null) {
+                reponse = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
+                        "<html><body>Utilisateur trouvé:<br>Nom: " + nom + "<br>Email: " + emailTrouve ;
+            } else {
+                reponse = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
+                        "<html><body>Erreur : aucun compte trouvé pour le nom '" + nom ;
+            }
+        } else {
+            reponse = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
+                    "<html><body>Erreur : veuillez fournir au moins un nom";
         }
 
-        // Répondre au client
-        String reponse = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" +
-                "<html><body>Merci pour votre soumission!</body></html>";
+        reponse += "<a href=\"index.html\">\n" +
+                "<button>Accéder au menu</button>\n" +
+                "</a>\n"+
+                "<a href=\"formulaire.html\">\n" +
+                "<button>Fini</button>\n" +
+                "</a>\n"+
+                "</body></html>";
 
+        // Envoyer la réponse
         OutputStream out = client.getOutputStream();
         out.write(reponse.getBytes("UTF-8"));
         out.close();
